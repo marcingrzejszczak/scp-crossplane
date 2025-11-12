@@ -1,0 +1,49 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: artifact-to-scp
+spec:
+  compositeTypeRef:
+    apiVersion: platform.example.org/v1alpha1
+    kind: CompositeArtifact
+  resources:
+    - name: scpUpload
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          forProvider:
+            manifest:
+              apiVersion: ops.example.org/v1alpha1
+              kind: SCPArtifact
+              metadata:
+                name: from-xrd
+              spec:
+                host: ""
+                port: 22
+                username: ""
+                destinationPath: ""
+                authRef:
+                  name: ""
+                  key: password
+                source:
+                  httpUrl: ""
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.host"
+          toFieldPath: "spec.forProvider.manifest.spec.host"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.port"
+          toFieldPath: "spec.forProvider.manifest.spec.port"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.username"
+          toFieldPath: "spec.forProvider.manifest.spec.username"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.destinationPath"
+          toFieldPath: "spec.forProvider.manifest.spec.destinationPath"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.secretRefName"
+          toFieldPath: "spec.forProvider.manifest.spec.authRef.name"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.sourceUrl"
+          toFieldPath: "spec.forProvider.manifest.spec.source.httpUrl"

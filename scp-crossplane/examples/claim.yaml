@@ -1,0 +1,11 @@
+apiVersion: platform.example.org/v1alpha1
+kind: Artifact
+metadata:
+  name: sample-artifact
+spec:
+  host: 127.0.0.1
+  port: 2222
+  username: test
+  destinationPath: /uploads/hello.txt
+  sourceUrl: https://example.com/hello.txt
+  secretRefName: scp-auth

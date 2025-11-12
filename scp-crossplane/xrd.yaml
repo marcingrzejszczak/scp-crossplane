@@ -1,0 +1,29 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: compositeartifacts.platform.example.org
+spec:
+  group: platform.example.org
+  names:
+    kind: CompositeArtifact
+    plural: compositeartifacts
+  claimNames:
+    kind: Artifact
+    plural: artifacts
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                host: { type: string }
+                port: { type: integer }
+                username: { type: string }
+                destinationPath: { type: string }
+                sourceUrl: { type: string }
+                secretRefName: { type: string }

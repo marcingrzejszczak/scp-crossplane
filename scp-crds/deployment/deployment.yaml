@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scp-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: scp-operator }
+  template:
+    metadata:
+      labels: { app: scp-operator }
+    spec:
+      serviceAccountName: scp-operator
+      containers:
+        - name: operator
+          image: ghcr.io/your-org/scp-operator:0.1.0-SNAPSHOT
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:MaxRAMPercentage=75"

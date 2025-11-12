@@ -1,0 +1,5 @@
+image:
+  repository: ghcr.io/your-org/scp-operator
+  tag: "0.1.0-SNAPSHOT"
+  pullPolicy: IfNotPresent
+namespace: default
