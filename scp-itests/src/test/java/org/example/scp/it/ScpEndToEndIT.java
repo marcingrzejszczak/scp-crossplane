@@ -132,13 +132,14 @@ public class ScpEndToEndIT {
 
     // -------- Helpers ---------
     private static void applyYamlFile(Path path) throws IOException {
+        log.info("Applying YAML from path {}", path.toFile().getAbsolutePath());
         try (var is = Files.newInputStream(path)) {
             // Do NOT force a namespace here. Crossplane install and many manifests contain
             // cluster-scoped resources (CRDs, ClusterRoles, etc.) and resources targeting
             // non-default namespaces. Let Fabric8 honor each document's own scope/namespace.
             client.load(is).createOrReplace();
         }
-        log.info("Applied YAML from path {}", path.toFile().getAbsolutePath());
+        log.info("Applied YAML {}", path.toFile().getName());
     }
 
     private static void waitForDeploymentReady(String namespace, String name) {
