@@ -10,6 +10,7 @@
     <module>scp-operator-app</module>
     <module>scp-crds</module>
     <module>scp-crossplane</module>
+    <module>scp-itests</module>
   </modules>
 
   <properties>

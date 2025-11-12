@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sshd
+  namespace: default
+  labels:
+    app: sshd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sshd
+  template:
+    metadata:
+      labels:
+        app: sshd
+    spec:
+      containers:
+        - name: sshd
+          image: ghcr.io/linuxserver/openssh-server:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: PASSWORD_ACCESS
+              value: "true"
+            - name: SUDO_ACCESS
+              value: "false"
+            - name: USER_NAME
+              value: "testuser"
+            - name: USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ssh-credentials
+                  key: password
+          ports:
+            - name: ssh
+              containerPort: 2222
+          readinessProbe:
+            tcpSocket:
+              port: 2222
+            initialDelaySeconds: 2
+            periodSeconds: 2
+          livenessProbe:
+            tcpSocket:
+              port: 2222
+            initialDelaySeconds: 5
+            periodSeconds: 5

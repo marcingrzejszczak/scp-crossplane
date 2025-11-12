@@ -26,4 +26,5 @@ spec:
                 username: { type: string }
                 destinationPath: { type: string }
                 sourceUrl: { type: string }
+                sourceInlineBase64: { type: string }
                 secretRefName: { type: string }

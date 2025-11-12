@@ -1,0 +1,18 @@
+apiVersion: ops.example.org/v1alpha1
+kind: SCPArtifact
+metadata:
+  name: sample-artifact
+  namespace: default
+spec:
+  host: sshd.default.svc
+  port: 2222
+  username: testuser
+  authRef:
+    name: ssh-credentials
+    key: password
+  destinationPath: /home/testuser/uploaded.txt
+  strictHostKeyChecking: false
+  source:
+    inline:
+      # "Hello from CRD" base64-encoded
+      base64: SGVsbG8gZnJvbSBDUkQK

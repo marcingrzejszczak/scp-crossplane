@@ -10,10 +10,10 @@ import io.fabric8.kubernetes.model.annotation.Version;
 
 import java.util.Map;
 
-@Group("platform.example.org")
+@Group("ops.example.org")
 @Version("v1alpha1")
-@Kind("Artifact")
-@Plural("artifacts")
+@Kind("SCPArtifact")
+@Plural("scparticles")
 public class SCPArtifact extends CustomResource<SCPArtifactSpec, SCPArtifactStatus> implements Namespaced {}
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

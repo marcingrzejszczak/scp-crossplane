@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: scp-operator
+  namespace: {{ .Values.namespace }}
 spec:
   replicas: 1
   selector:
@@ -13,8 +14,8 @@ spec:
       serviceAccountName: scp-operator
       containers:
         - name: operator
-          image: ghcr.io/your-org/scp-operator:0.1.0-SNAPSHOT
-          imagePullPolicy: IfNotPresent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: JAVA_TOOL_OPTIONS
               value: "-XX:MaxRAMPercentage=75"

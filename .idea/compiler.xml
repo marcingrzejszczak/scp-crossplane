@@ -6,7 +6,9 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="scp-crds" />
         <module name="scp-operator-app" />
+        <module name="scp-itests" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>

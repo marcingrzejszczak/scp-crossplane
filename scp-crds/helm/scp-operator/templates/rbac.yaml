@@ -1,7 +1,13 @@
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.namespace }}
+---
+apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: scp-operator
+  namespace: {{ .Values.namespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -26,4 +32,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: scp-operator
-    namespace: default
+    namespace: {{ .Values.namespace }}

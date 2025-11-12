@@ -3,9 +3,11 @@ kind: Artifact
 metadata:
   name: sample-artifact
 spec:
-  host: 127.0.0.1
+  host: sshd.default.svc
   port: 2222
-  username: test
-  destinationPath: /uploads/hello.txt
-  sourceUrl: https://example.com/hello.txt
-  secretRefName: scp-auth
+  username: testuser
+  destinationPath: /home/testuser/uploaded.txt
+  # Provide either sourceUrl or sourceInlineBase64; we use inline here
+  sourceInlineBase64: SGVsbG8gZnJvbSBDcm9zc3BsYW5lIEV2ZW50dWFsbHkhCg==
+  # Secret must exist in the same namespace as the composed resource (default)
+  secretRefName: ssh-credentials
