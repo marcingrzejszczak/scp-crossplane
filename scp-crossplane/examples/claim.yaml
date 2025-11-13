@@ -2,8 +2,9 @@ apiVersion: platform.example.org/v1alpha1
 kind: Artifact
 metadata:
   name: sample-artifact
+  namespace: default          # ← add this
 spec:
-  host: sshd.default.svc
+  host: sshd.default.svc      # ok (or sshd.default.svc.cluster.local)
   port: 2222
   username: testuser
   destinationPath: /home/testuser/uploaded.txt
