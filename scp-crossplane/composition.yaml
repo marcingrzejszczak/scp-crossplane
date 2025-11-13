@@ -2,61 +2,68 @@ apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
   name: artifact-to-scp
-  labels:
-    crossplane.io/xrd: compositeartifacts.platform.example.org
 spec:
+  # This is your XR type
   compositeTypeRef:
     apiVersion: platform.example.org/v1alpha1
     kind: CompositeArtifact
 
-  # NOTE: NO `mode:` here!
+  # Your Crossplane build only supports Pipeline (or nil → Pipeline)
+  mode: Pipeline
 
-  resources:
-    - name: scpUpload
-      base:
-        apiVersion: kubernetes.crossplane.io/v1alpha2
-        kind: Object
-        spec:
-          providerConfigRef:
-            name: k8s
-          forProvider:
-            manifest:
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        # must match the Function name from examples/function-patch-and-transform.yaml
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: scparticle
+            base:
               apiVersion: ops.example.org/v1alpha1
               kind: SCPArtifact
               metadata:
-                name: from-xrd
-                namespace: default
+                # This label is what your JUnit test is filtering on:
+                # withLabel("crossplane.io/composite", compositeName)
+                labels:
+                  crossplane.io/composite: $(context.composite.resource.metadata.name)
               spec:
+                # placeholders – will be overwritten by patches below
                 host: ""
-                port: 22
+                port: 0
                 username: ""
+                secretRefName: ""
                 destinationPath: ""
-                authRef:
-                  name: ""
-                  key: password
-                source:
-                  httpUrl: ""
-                  inline:
-                    base64: ""
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.host
-          toFieldPath: spec.forProvider.manifest.spec.host
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.port
-          toFieldPath: spec.forProvider.manifest.spec.port
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.username
-          toFieldPath: spec.forProvider.manifest.spec.username
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.destinationPath
-          toFieldPath: spec.forProvider.manifest.spec.destinationPath
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.secretRefName
-          toFieldPath: spec.forProvider.manifest.spec.authRef.name
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.sourceUrl
-          toFieldPath: spec.forProvider.manifest.spec.source.httpUrl
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.sourceInlineBase64
-          toFieldPath: spec.forProvider.manifest.spec.source.inline.base64
+                sourceInlineBase64: ""
+            patches:
+              # host
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.host"
+                toFieldPath: "spec.host"
+
+              # port
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.port"
+                toFieldPath: "spec.port"
+
+              # username
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.username"
+                toFieldPath: "spec.username"
+
+              # SSH secret name
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.secretRefName"
+                toFieldPath: "spec.secretRefName"
+
+              # destination file path
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.destinationPath"
+                toFieldPath: "spec.destinationPath"
+
+              # base64 content
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.sourceInlineBase64"
+                toFieldPath: "spec.sourceInlineBase64"

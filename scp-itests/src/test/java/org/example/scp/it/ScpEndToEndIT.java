@@ -36,15 +36,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * E2E:
- *  - k3s via Testcontainers
- *  - build/import operator image
- *  - render/apply CRDs/RBAC/Deployment
- *  - install Crossplane + provider-kubernetes
- *  - apply XRD/Composition
- *  - deploy sshd + secret
- *  - apply Artifact claim
- *  - wait for composed scparticles
- *  - verify uploaded file exists in sshd pod
+ * - k3s via Testcontainers
+ * - build/import operator image
+ * - render/apply CRDs/RBAC/Deployment
+ * - install Crossplane + provider-kubernetes
+ * - apply XRD/Composition
+ * - deploy sshd + secret
+ * - apply Artifact claim
+ * - wait for composed scparticles
+ * - verify uploaded file exists in sshd pod
  */
 public class ScpEndToEndIT {
 
@@ -54,11 +54,11 @@ public class ScpEndToEndIT {
 
     private static final String ARTIFACT_CRD_NAME = "artifacts.platform.example.org";
 
-    private static final String ARTIFACT_GROUP   = "platform.example.org";
-    private static final String ARTIFACT_NAME   = "sample-artifact";
+    private static final String ARTIFACT_GROUP = "platform.example.org";
+    private static final String ARTIFACT_NAME = "sample-artifact";
     private static final String ARTIFACT_VERSION = "v1alpha1";
-    private static final String ARTIFACT_PLURAL  = "artifacts";
-    private static final String ARTIFACT_KIND    = "Artifact";
+    private static final String ARTIFACT_PLURAL = "artifacts";
+    private static final String ARTIFACT_KIND = "Artifact";
 
     private static final String SCP_CRD_NAME = "scparticles.ops.example.org";
     private static final String SCP_GROUP = "ops.example.org";
@@ -77,8 +77,13 @@ public class ScpEndToEndIT {
         Config cfg = Config.fromKubeconfig(k3s.getKubeConfigYaml());
         client = new KubernetesClientBuilder().withConfig(cfg).build();
 
+        // Build operator image tar (scp-operator-app module)
         buildOperatorImageTar();
+
+        // Import tar into k3s containerd
         importImageTarIntoK3s();
+
+        // Generate CRDs/RBAC/Deployment (scp-crds module)
         runCrdsGenerator();
     }
 
@@ -104,12 +109,12 @@ public class ScpEndToEndIT {
         // --- Crossplane core ---
         installCrossplane();
 
-        // --- Provider-kubernetes + ProviderConfig ---
+        // --- Provider-kubernetes + ProviderConfig + Function ---
         Path examples = of("..", "scp-crossplane", "examples");
         applyYamlFile(examples.resolve("provider-kubernetes.yaml"));
         waitForProviderHealthy("provider-kubernetes");
         applyYamlFile(examples.resolve("providerconfig-k8s.yaml"));
-//        applyYamlFile(examples.resolve("function-patch-and-transform.yaml"));
+        applyYamlFile(examples.resolve("function-patch-and-transform.yaml"));
 
         // --- XRD + Composition ---
         applyYamlFile(of("..", "scp-crossplane", "xrd.yaml"));
@@ -178,6 +183,16 @@ public class ScpEndToEndIT {
                 .withGroup(SCP_GROUP)
                 .withVersion(SCP_VERSION)
                 .withPlural(SCP_PLURAL)
+                .build();
+    }
+
+    private static ResourceDefinitionContext artifactCtx() {
+        return new ResourceDefinitionContext.Builder()
+                .withGroup(ARTIFACT_GROUP)
+                .withVersion(ARTIFACT_VERSION)
+                .withPlural(ARTIFACT_PLURAL)
+                .withKind(ARTIFACT_KIND)
+                .withNamespaced(true)
                 .build();
     }
 
@@ -446,7 +461,7 @@ public class ScpEndToEndIT {
                     .withEnv("HELM_DATA_HOME", "/tmp/helm/data")
                     .withFileSystemBind(kubeconfigFile.toAbsolutePath().toString(), "/root/.kube/config", BindMode.READ_ONLY)
                     .withNetworkMode("host")
-                    .withStartupCheckStrategy(new OneShotStartupCheckStrategy().withTimeout(Duration.ofMinutes(4)))
+                    .withStartupCheckStrategy(new OneShotStartupCheckStrategy().withTimeout(Duration.ofMinutes(1)))
                     .withCommand(
                             "upgrade", "--install", "crossplane", "crossplane",
                             "--repo", "https://charts.crossplane.io/stable",
@@ -462,7 +477,7 @@ public class ScpEndToEndIT {
             }
         }
 
-        Awaitility.await().atMost(Duration.ofMinutes(6)).pollInterval(Duration.ofSeconds(3)).until(() -> {
+        Awaitility.await().atMost(Duration.ofMinutes(1)).pollInterval(Duration.ofSeconds(3)).until(() -> {
             try {
                 waitForDeploymentReady("crossplane-system", "crossplane");
                 waitForDeploymentReady("crossplane-system", "crossplane-rbac-manager");
@@ -486,9 +501,23 @@ public class ScpEndToEndIT {
                     .atMost(Duration.ofMinutes(5))
                     .pollInterval(Duration.ofSeconds(5))
                     .untilAsserted(() -> {
-                        var gen = client.genericKubernetesResources(ctx)
-                                .withName(providerName)
-                                .get();
+                        var list = client.genericKubernetesResources(ctx)
+                                .list();
+
+                        assertThat(list)
+                                .as("providers list should not be null")
+                                .isNotNull();
+
+                        List<GenericKubernetesResource> items = list.getItems();
+                        assertThat(items)
+                                .as("providers items list should not be null")
+                                .isNotNull();
+
+                        GenericKubernetesResource gen = items.stream()
+                                .filter(p -> p.getMetadata() != null
+                                        && providerName.equals(p.getMetadata().getName()))
+                                .findFirst()
+                                .orElse(null);
 
                         assertThat(gen)
                                 .as("provider %s should exist (cluster-scoped)", providerName)
@@ -588,7 +617,7 @@ public class ScpEndToEndIT {
         log.info("Running CRDs renderer from {}", file.getAbsolutePath());
         ProcessBuilder processBuilder = new ProcessBuilder()
                 .directory(file)
-                .command("sh", "mvnw", "-DskipTests", "-pl", ":scp-crds", "package")
+                .command("sh", "mvnw", "-DskipTests", "-pl", "scp-crds", "package")
                 .inheritIO()
                 .redirectErrorStream(true);
         processBuilder.environment().put("JAVA_HOME", System.getProperty("java.home"));
@@ -598,16 +627,6 @@ public class ScpEndToEndIT {
         if (code != 0) {
             throw new IOException("Failed to generate CRDs/RBAC/Deployment");
         }
-    }
-
-    private static ResourceDefinitionContext artifactCtx() {
-        return new ResourceDefinitionContext.Builder()
-                .withGroup(ARTIFACT_GROUP)
-                .withVersion(ARTIFACT_VERSION)
-                .withPlural(ARTIFACT_PLURAL)
-                .withKind(ARTIFACT_KIND)
-                .withNamespaced(true)
-                .build();
     }
 
     @SuppressWarnings("unchecked")
@@ -660,14 +679,14 @@ public class ScpEndToEndIT {
         }
 
         @SuppressWarnings("unchecked")
-        Map<String,Object> spec = (Map<String,Object>) art.getAdditionalProperties().get("spec");
+        Map<String, Object> spec = (Map<String, Object>) art.getAdditionalProperties().get("spec");
         if (spec == null) {
             log.info("Artifact '{}' has no spec", artifactName);
             return;
         }
 
         @SuppressWarnings("unchecked")
-        Map<String,Object> ref = (Map<String,Object>) spec.get("resourceRef");
+        Map<String, Object> ref = (Map<String, Object>) spec.get("resourceRef");
         if (ref == null) {
             log.info("Artifact '{}' has no spec.resourceRef", artifactName);
             return;
@@ -687,5 +706,4 @@ public class ScpEndToEndIT {
 
         logYaml("CompositeArtifact/" + NS + "/" + compositeName, xr);
     }
-
 }
